@@ -18,10 +18,26 @@ function rejectsVariant(change: (variant: TopicVariant) => void, expectedPath: s
 }
 
 test('the published catalog is valid; all categories and levels exist', () => {
-  assert.deepEqual(topics.map((topic) => topic.id), ['personality'])
+  assert.deepEqual(topics.map((topic) => topic.id), ['personality', 'smile', 'waiting-in-a-queue'])
   assert.equal(validateTopics(topics).ok, true)
   assert.equal(categories.length, 5)
   assert.deepEqual(levels.map((level) => [level.id, level.cefr.join('/')]), [['basic', 'A1/A2'], ['standard', 'A2/B1'], ['challenge', 'B1/B2']])
+})
+
+test('the Stage 3 catalog contains exactly nine complete lesson variants', () => {
+  assert.equal(topics.reduce((count, topic) => count + Object.keys(topic.variants).length, 0), 9)
+  for (const topic of topics) {
+    assert.deepEqual(Object.keys(topic.variants).sort(), ['basic', 'challenge', 'standard'])
+    for (const level of ['basic', 'standard', 'challenge'] as const) {
+      const variant = topic.variants[level]
+      assert.ok(variant)
+      assert.equal(variant.exercises.length, 4)
+      assert.ok(variant.vocabulary.length >= 3)
+      assert.ok(variant.buildTasks.length >= 2)
+      assert.ok(variant.describeTask.suggestedItemIds.length > 0)
+      assert.ok(variant.speakingTask.speakingSeconds > 0)
+    }
+  }
 })
 
 test('loads the complete Personality Basic lesson with unique IDs and valid references', () => {
