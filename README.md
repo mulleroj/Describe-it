@@ -1,92 +1,111 @@
 # Describe It!
 
-Základ webové aplikace pro praktickou angličtinu středoškoláků. **Implementována pouze Etapa 1.** Úvod a výběr úrovně fungují; lekce, katalog aktivit a Random Challenge zatím nejsou implementovány.
+Describe It! je malá lokální webová aplikace pro praktickou angličtinu středoškoláků. Žák si zvolí úroveň, projde lekci od slovní zásoby k vlastnímu popisu a může si vyzkoušet krátkou speaking challenge. Aplikace nepoužívá účet, backend, AI, mikrofon ani ukládání žákovských textů.
 
-## Spuštění
+## Stack
 
-Použijte Node.js 24.11.1 (viz `.nvmrc`) a npm.
+- React 19, TypeScript 6, Vite 8 a React Router 8
+- Node.js 24.11.1 a npm (`.nvmrc`)
+- vestavěný Node test runner pro unit testy
+- Playwright pro malou browser smoke suite
+- ESLint s pravidly pro TypeScript, React Hooks a Fast Refresh
+- statické nasazení na Netlify; žádný SSR ani serverová databáze
+
+## Lokální spuštění
 
 ```sh
 npm ci
 npm run dev
 ```
 
-V PowerShellu lze při omezení spouštění skriptů používat `npm.cmd`. Adresu vývojového serveru vypíše Vite. Server nepotřebuje žádné API klíče ani environment secrets.
+V PowerShellu lze použít `npm.cmd`, pokud je omezeno spouštění skriptů. Vite vypíše adresu lokálního serveru.
+
+## Kontroly a build
 
 ```sh
-npm run typecheck
-npm run lint
-npm test
-npm run validate:content
-npm run build
-npm run preview
+npm run validate:content  # runtime kontrola publikovaného katalogu
+npm run typecheck         # TypeScript
+npm run lint              # ESLint, včetně zákazu warningů
+npm test                  # unit a content testy
+npm run build             # typecheck + content validation + Vite production build
+npm run preview           # lokální náhled dist/
 ```
 
-Produkční sestavení vzniká v `dist/`. Build zahrnuje TypeScript a runtime kontrolu publikovaného obsahu. Testy běží vestavěným test runnerem Node.js bez další testovací knihovny.
+Browser smoke testy používají production build a Vite preview server:
 
-## Architektura
+```sh
+npx playwright install chromium
+npm run test:browser
+```
+
+Suite obsahuje čtyři krátké scénáře: homepage a výběr úrovně, průchod lesson steps, Random Challenge s timerem a přímou hlubokou route po refreshi.
+
+## Struktura projektu
 
 ```text
 src/
-  app/                   sestavení aplikace, router, layout, stav úrovně
-  components/
-    ui/                  odkazy-tlačítka, ikony, informační stav
-    learning/            výběr úrovně a přehled výukové cesty
-  pages/                 úvod a samostatné route komponenty
-  content/
-    topics/              publikovaný registr témat (aktuálně Personality Basic)
-    categories.ts        taxonomie kategorií a podkategorií
-    levels.ts            aplikační úrovně a mapování CEFR
-    learning-path.ts     texty úvodního přehledu
-    catalog.ts           runtime validační hranice
+  app/                   router, layout a sdílený stav úrovně
+  components/            UI, level selector a lesson steps
+  content/               katalog, kategorie, úrovně a texty
   domain/                TypeScript datový model
-  validation/            kontrola vstupu unknown, ID, referencí a řešení
-  storage/               bezpečný přístup k lokálnímu nastavení
-  utils/                 malé sdílené pomocné funkce
-  styles/                design tokens, globální CSS, komponentové styly
+  pages/                 homepage, katalog, lekce a Random Challenge
+  random/                deterministicky testovatelný výběr a safe storage
+  storage/               bezpečný přístup k preferencím
+  validation/            runtime validace obsahu z unknown vstupu
+  styles/                design tokens a komponentové styly
 public/                  lokální favicon
-scripts/                 kontrola obsahu při sestavení
-tests/                   validační testy a testy selhání úložiště
-docs/                    pravidla obsahu a report Etapy 1
+scripts/                 kontroly spouštěné při build procesu
+tests/                   unit, content, storage, random a browser smoke testy
+docs/                    pravidla pro výukový obsah
+.github/workflows/       GitHub Actions CI
 ```
 
-Aplikace používá React, TypeScript, Vite a deklarativní React Router. ESLint má pravidla pro TypeScript, React Hooks a Fast Refresh. Striktní TypeScript doplňují `noUncheckedIndexedAccess` a `exactOptionalPropertyTypes`; platí i pro testy a skripty.
+## Obsah a úrovně
 
-Runtime závislosti jsou pouze React, React DOM a React Router. Bez externího UI frameworku, knihovny pro globální stav a knihovny pro schémata. Verze závislostí jsou uzamčené v `package-lock.json`.
+Publikovaný katalog je v `src/content/topics/index.ts`. Aktuálně obsahuje tři témata a devět kompletních variant:
+
+- Personality
+- Smile
+- Waiting in a queue
+
+Každé téma může mít variantu `basic`, `standard` a `challenge`. Úrovně jsou definované centrálně v `src/content/levels.ts` jako Basic A1/A2, Standard A2/B1 a Challenge B1/B2. Chybějící varianta se v katalogu zobrazí jako `Coming soon` a není použitelná v Random Challenge.
+
+Při přidání tématu:
+
+1. Vytvoř `src/content/topics/<topic-id>.ts` podle `Topic` modelu a existujících variant.
+2. Přidej téma do `src/content/topics/index.ts`.
+3. Udrž všechny reference uvnitř stejné varianty a vyplň Explore, Practice, Build, Describe i Speak.
+4. Ověř obsah pomocí `npm run validate:content`, `npm test` a `npm run build`.
+5. Proveď samostatnou jazykovou a pedagogickou revizi; strukturální validátor ji nenahrazuje.
+
+Testovací fixture v `tests/fixtures/` slouží pouze validátorovým testům a aplikace je neimportuje.
 
 ## Routy
 
-| Adresa | Stav v Etapě 1 |
-| --- | --- |
-| `/` | Funkční úvod a výběr úrovně |
-| `/topics` | Informační stránka s vybranou úrovní |
-| `/topics/:topicId` | Připravená routa; nepublikované téma zobrazí srozumitelný stav |
-| `/topics/:topicId/:level` | Připravená routa; kontrola ID úrovně a její dostupnosti |
-| `/random` | Informační stránka Coming soon, bez losování |
-| ostatní adresy | Přístupná stránka Page not found s návratem |
+- `/` — homepage a výběr úrovně
+- `/topics` — katalog témat podle zvolené úrovně
+- `/topics/:topicId/:level` — lesson route
+- `/random` — Random Challenge z existujícího katalogu
+- neznámé adresy — přístupný not-found stav
 
-Nejsou zde nefunkční karty kategorií ani falešné lekce. Pět kategorií včetně podkategorií existuje v datové taxonomii. Všechny cílové informační stránky obsahují možnost návratu.
+Pro kompatibilitu je `/topics/queue/:level` alias pro publikované téma `waiting-in-a-queue`.
 
-## Obsah a validace
+## Random Challenge
 
-Podrobná pravidla jsou v [docs/content-guide.md](docs/content-guide.md). Výuková data se nepíší do React komponent. Testovací data se nikdy neimportují do aplikace.
+Random Challenge používá pouze existující `speakingTask` a výrazy z publikovaných lesson variant. Výběr filtruje zvolenou úroveň, ignoruje nedostupný nebo `Coming soon` obsah, podporuje injectable RNG pro testy a při více kandidátech potlačuje okamžité opakování. Při prázdném katalogu vrací bezpečný stav.
 
-Vlastní validátor přijímá `unknown`, vrací strukturované chyby s cestami a kontroluje povinná pole, ID, úrovně, kategorie, reference i strukturální platnost řešení. Spouští se při buildu i při načtení katalogu aplikací. V neplatném stavu se obsah nezpřístupní.
+Sdílený `SpeakingTimer` je použit v lesson Speak i v Random Challenge. Úroveň se ukládá jako `basic`, `standard` nebo `challenge` pod `describe-it:level:v1`; poslední random key je samostatná nepovinná preference. Každý přístup k `localStorage` je v `try/catch` a při selhání zůstane aplikace použitelná pouze pro aktuální návštěvu.
 
-## Uložení úrovně
+## CI
 
-Výchozí úroveň je Basic. React Context a state drží aktuální volbu; do localStorage se ukládá jen hodnota `basic`, `standard` nebo `challenge` pod klíčem `describe-it:level:v1`.
+`.github/workflows/ci.yml` běží při pull requestu do `main` a při pushi do `main`. Na čistém runneru provede `npm ci`, nainstaluje Chromium, validaci obsahu, typecheck, lint, unit testy, browser smoke testy a production build. Workflow neobsahuje deployment secrets.
 
-Čtení i zápis včetně samotného přístupu k localStorage jsou v `try/catch`. Neznámé hodnoty se ignorují. Při neúspěšném zápisu zůstane volba funkční v aktuální návštěvě a zobrazí se krátká informace. Neexistují účty, osobní údaje ani ukládání žákovských textů.
+## Deployment model
 
-## Design a přístupnost
+`netlify.toml` nastavuje Node.js 24.11.1, build command `npm run build`, publish directory `dist` a SPA fallback `/* -> /index.html`. Díky tomu funguje přímé otevření i refresh hlubokých React route, například `/topics/smile/standard` a `/random`.
 
-Vlastní CSS používá světlý neutrální základ, fialový akcent, systémové fonty a responzivní karty. Breakpointy jsou 40rem a 64rem. Radio skupina je nativní a ovladatelná šipkami. Součástí je skip odkaz, viditelný fokus, návrat fokusu na obsah při změně routy, popisky úrovní, podpora reduced motion a základ forced colors. Žádné externí fonty či obrázky.
+Netlify Deploy Preview vzniká z GitHub pull requestu, pokud je Netlify site propojená s tímto repository. Přístup k Netlify účtu a nastavení propojení patří do Netlify UI; žádné tokeny ani secrets se necommitují do repository.
 
-## Netlify a další etapy
+## Bezpečnostní hranice MVP
 
-`netlify.toml` definuje build, výstup `dist`, Node.js a SPA fallback na `index.html`, aby přímé adresy budoucích lekcí fungovaly po nasazení. Nasazení na Netlify v této etapě nebylo provedeno.
-
-Neimplementováno: výukové enginy, skutečné lekce, kompletní katalog, timer, random logika, Teacher Mode, AI, backend, databáze, mikrofon, statistiky ani service worker. Struktura statické aplikace umožní pozdější PWA, ale offline režim nyní není deklarován.
-
-Etapa 2 vyžaduje další pokyn uživatele.
+Data jsou součástí buildu a aplikace je čistě klientská. Nejsou zde účty, osobní údaje, API keys, AI, mikrofon, nahrávání, speech recognition, analytics, databáze, exporty ani PWA offline režim.

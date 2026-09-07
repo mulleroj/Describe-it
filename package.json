@@ -9,6 +9,7 @@
     "build": "npm run typecheck && npm run validate:content && vite build",
     "lint": "eslint . --max-warnings 0",
     "test": "node --test tests/*.test.ts",
+    "test:browser": "playwright test",
     "validate:content": "node scripts/validate-content.ts",
     "preview": "vite preview"
   },
@@ -19,10 +20,12 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.63.0",
     "@types/node": "^24.13.3",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
     "@vitejs/plugin-react": "^6.1.0",
+    "@playwright/test": "^1.58.2",
     "eslint": "^10.10.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.6",
