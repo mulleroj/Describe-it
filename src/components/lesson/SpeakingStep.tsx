@@ -5,7 +5,7 @@ type TimerPhase = 'preparation' | 'speaking' | 'finished'
 
 function formatTime(seconds: number) { const total = Math.max(0, Math.ceil(seconds)); return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}` }
 
-function SpeakingTimer({ task }: { task: SpeakingTask }) {
+export function SpeakingTimer({ task, startLabel = 'Start preparation' }: { task: SpeakingTask; startLabel?: string }) {
   const [phase, setPhase] = useState<TimerPhase>('preparation')
   const [elapsed, setElapsed] = useState(0)
   const [running, setRunning] = useState(false)
@@ -53,7 +53,7 @@ function SpeakingTimer({ task }: { task: SpeakingTask }) {
   const target = phase === 'preparation' ? task.preparationSeconds : task.speakingSeconds
   const remaining = phase === 'finished' ? 0 : target - elapsed
   const progress = target === 0 ? 100 : (elapsed / target) * 100
-  return <div className="timer-card card"><p className="timer-phase">{phase === 'preparation' ? 'Preparation' : phase === 'speaking' ? 'Speak now' : 'Finished'}</p><div className="timer-value" aria-label={`${formatTime(remaining)} remaining`}>{formatTime(remaining)}</div><div className="timer-track" aria-hidden="true"><span style={{ width: `${progress}%` }} /></div><p className="timer-announcement" role="status" aria-live="polite">{announcement}</p><div className="timer-actions">{!running && phase === 'preparation' && elapsed === 0 && <button className="button button--primary" type="button" onClick={startPreparation}>Start preparation</button>}{running && <button className="button button--secondary" type="button" onClick={pause}>Pause</button>}{!running && phase !== 'finished' && elapsed > 0 && <button className="button button--primary" type="button" onClick={resume}>Resume</button>}{phase === 'preparation' && <button className="button button--secondary" type="button" onClick={skipPreparation}>Skip preparation</button>}{phase !== 'preparation' && phase !== 'finished' && <button className="button button--secondary" type="button" onClick={finish}>Finish</button>}<button className="button button--secondary" type="button" onClick={restart}>Restart</button></div></div>
+  return <div className="timer-card card"><p className="timer-phase">{phase === 'preparation' ? 'Preparation' : phase === 'speaking' ? 'Speak now' : 'Finished'}</p><div className="timer-value" aria-label={`${formatTime(remaining)} remaining`}>{formatTime(remaining)}</div><div className="timer-track" aria-hidden="true"><span style={{ width: `${progress}%` }} /></div><p className="timer-announcement" role="status" aria-live="polite">{announcement}</p><div className="timer-actions">{!running && phase === 'preparation' && elapsed === 0 && <button className="button button--primary" type="button" onClick={startPreparation}>{startLabel}</button>}{running && <button className="button button--secondary" type="button" onClick={pause}>Pause</button>}{!running && phase !== 'finished' && elapsed > 0 && <button className="button button--primary" type="button" onClick={resume}>Resume</button>}{phase === 'preparation' && <button className="button button--secondary" type="button" onClick={skipPreparation}>Skip preparation</button>}{phase !== 'preparation' && phase !== 'finished' && <button className="button button--secondary" type="button" onClick={finish}>Finish</button>}<button className="button button--secondary" type="button" onClick={restart}>Restart</button></div></div>
 }
 
 export function SpeakingStep({ variant }: { variant: TopicVariant }) {
