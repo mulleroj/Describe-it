@@ -1,0 +1,13 @@
+import { useState } from 'react'
+import type { LearningItem, TopicVariant } from '../../domain/content-types.ts'
+
+function itemsFor(variant: TopicVariant) { return [...variant.vocabulary, ...variant.phrases, ...variant.collocations, ...variant.sentenceStarters] as LearningItem[] }
+
+export function DescribeStep({ variant }: { variant: TopicVariant }) {
+  const [draft, setDraft] = useState('')
+  const [showModel, setShowModel] = useState(false)
+  const [checked, setChecked] = useState<Record<string, boolean>>({})
+  const items = itemsFor(variant)
+  function addText(text: string) { setDraft((value) => `${value}${value && !value.endsWith(' ') ? ' ' : ''}${text}`) }
+  return <section className="lesson-step" aria-labelledby="describe-title"><p className="eyebrow">Step 4 · Describe</p><h2 id="describe-title" tabIndex={-1}>{variant.describeTask.prompt}</h2><div className="situation-card"><p className="eyebrow">Situation</p><p>{variant.describeTask.situation}</p></div><div className="writing-layout"><div><label className="field-label" htmlFor="describe-draft">Write your description</label><textarea id="describe-draft" rows={8} value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="Write about your friend in 3–5 sentences." /><p className="privacy-note">This is your private practice draft. It is not saved or sent.</p></div><aside className="help-panel" aria-label="Writing help"><h3>Word help</h3><div className="suggestion-row">{variant.describeTask.suggestedItemIds.map((id) => { const item = items.find((entry) => entry.id === id); return item ? <button className="chip" type="button" key={id} onClick={() => addText(item.english)}>{item.english}</button> : null })}</div><h3>Sentence starters</h3><ul className="starter-list">{variant.sentenceStarters.map((item) => <li key={item.id}><button type="button" onClick={() => addText(item.english)}>{item.english}</button></li>)}</ul></aside></div><fieldset className="self-check"><legend>Self-check</legend>{variant.describeTask.checklist.map((item, index) => <label key={item}><input type="checkbox" checked={checked[`${index}`] ?? false} onChange={(event) => setChecked((previous) => ({ ...previous, [`${index}`]: event.target.checked }))} /> <span>{item}</span></label>)}</fieldset><div className="model-block"><button className="button button--secondary" type="button" disabled={!draft.trim()} onClick={() => setShowModel((value) => !value)}>{showModel ? 'Hide model example' : 'Show a model example'}</button>{showModel && <div className="model-example" role="region" aria-label="Model example"><p>{variant.modelDescription}</p><p className="muted">This is one example, not the only correct answer.</p></div>}</div></section>
+}
